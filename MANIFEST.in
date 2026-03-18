@@ -1,0 +1,5 @@
+include README.md
+include LICENSE
+recursive-include ckanext/swagger_view/public *
+recursive-include ckanext/swagger_view/templates *
+global-exclude *.pyc __pycache__

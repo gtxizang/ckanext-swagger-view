@@ -1,0 +1,11 @@
+*.egg-info/
+*.egg
+*.pyc
+__pycache__/
+dist/
+build/
+.eggs/
+.tox/
+*.swp
+*.swo
+.DS_Store

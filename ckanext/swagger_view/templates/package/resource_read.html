@@ -1,0 +1,44 @@
+{% ckan_extends %}
+
+{% block head_extras %}
+  {{ super() }}
+  {% asset 'swagger_view/swagger_explorer_css' %}
+{% endblock %}
+
+{% block resource_actions_inner %}
+  {{ super() }}
+  {% if h.swagger_view_can_explore(res.id) %}
+    <li>
+      <button class="btn btn-primary" type="button"
+              data-module="swagger-explorer"
+              data-module-resource-id="{{ res.id }}"
+              data-module-base-url="{{ h.swagger_view_site_url() }}"
+              data-module-dataset-name="{{ h.dataset_display_name(pkg_dict) }}"
+              data-module-hidden-fields="{{ h.swagger_view_hidden_fields() }}">
+        <i class="fa fa-bolt"></i> {{ _("API Explorer") }}
+      </button>
+    </li>
+  {% endif %}
+{% endblock %}
+
+{% block primary_content %}
+  {{ super() }}
+
+  <div id="swagger-explorer-modal" class="swagger-explorer-modal"
+       role="dialog" aria-modal="true" aria-labelledby="swagger-explorer-title"
+       style="display:none;">
+    <div class="swagger-explorer-dialog">
+      <div class="swagger-explorer-header">
+        <h3 id="swagger-explorer-title">{{ _("API Explorer") }}</h3>
+        <button class="swagger-explorer-close" type="button"
+                aria-label="{{ _('Close') }}" title="{{ _('Close') }}">&times;</button>
+      </div>
+      <div class="swagger-explorer-body">
+        <div id="swagger-explorer-status" class="swagger-explorer-status"></div>
+        <div id="swagger-explorer-ui"></div>
+      </div>
+    </div>
+  </div>
+
+  {% asset 'swagger_view/swagger_explorer_js' %}
+{% endblock %}

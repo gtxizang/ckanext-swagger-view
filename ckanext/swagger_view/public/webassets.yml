@@ -1,0 +1,15 @@
+swagger_explorer_css:
+  output: swagger_view/%(version)s_swagger-explorer.css
+  contents:
+    - css/swagger-ui.css
+    - css/swagger-explorer.css
+
+swagger_explorer_js:
+  output: swagger_view/%(version)s_swagger-explorer.js
+  extra:
+    preload:
+      - base/main
+  contents:
+    - js/swagger-ui-bundle.js
+    - js/swagger-ui-standalone-preset.js
+    - js/swagger-explorer.js
