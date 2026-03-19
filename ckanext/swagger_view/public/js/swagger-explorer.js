@@ -233,7 +233,6 @@ this.ckan.module("swagger-explorer", function ($) {
       return f.isEnum && f.enumValues && f.enumValues.length > 1;
     });
 
-    var tableName = safeSqlIdentifier(resourceId);
     // info.title is rendered as text by Swagger UI (not HTML), so use raw name.
     // info.description is rendered as markdown, so escape there.
     var safeDatasetName = escapeMarkdown(datasetName);
@@ -244,7 +243,7 @@ this.ckan.module("swagger-explorer", function ($) {
     if (totalRecords) infoDesc += "**Total records:** " + totalRecords.toLocaleString() + "\n\n";
 
     if (allFields.length > 0) {
-      infoDesc += "<details><summary><strong>Data Dictionary</strong> (" + allFields.length + " fields)</summary>\n\n";
+      infoDesc += "#### Data Dictionary (" + allFields.length + " fields)\n\n";
       infoDesc += "| Field | Type | Details |\n|---|---|---|\n";
       allFields.forEach(function (f) {
         var safeId = escapeMarkdown(truncate(f.id, MAX_FIELD_NAME_LEN));
@@ -264,7 +263,7 @@ this.ckan.module("swagger-explorer", function ($) {
         }
         infoDesc += "| " + safeId + " | " + safeType + " | " + details + " |\n";
       });
-      infoDesc += "\n</details>\n";
+      infoDesc += "\n";
     }
 
     // --- Enum filter params ---
@@ -287,59 +286,6 @@ this.ckan.module("swagger-explorer", function ($) {
       ? "Comma-separated fields to return. Available: " + safeFieldNames.join(", ")
       : "Comma-separated field names to return";
 
-    // --- SQL examples ---
-    var enumField = enumFields[0];
-    var numericField = userFields.filter(function (f) {
-      return ["int", "int4", "int8", "float8", "numeric"].indexOf(f.type) !== -1;
-    })[0];
-    var timestampField = userFields.filter(function (f) { return f.type === "timestamp"; })[0];
-    var firstField = userFields[0] || { id: "column_name", sample: "value" };
-
-    var sqlExamples = {
-      "select_all": {
-        summary: "First 10 records",
-        value: { sql: "SELECT * FROM " + tableName + " LIMIT 10" }
-      }
-    };
-
-    if (enumField) {
-      var safeEnumId = safeSqlIdentifier(enumField.id);
-      var safeEnumVal = String(enumField.enumValues[0]).replace(/\\/g, "\\\\").replace(/'/g, "''");
-      sqlExamples["filter_by_category"] = {
-        summary: "Filter by " + escapeMarkdown(enumField.id),
-        value: { sql: "SELECT * FROM " + tableName + " WHERE " + safeEnumId + " = '" + safeEnumVal + "' LIMIT 20" }
-      };
-    }
-
-    if (numericField && enumField) {
-      var safeEnumId2 = safeSqlIdentifier(enumField.id);
-      var safeNumId = safeSqlIdentifier(numericField.id);
-      sqlExamples["aggregate"] = {
-        summary: "Aggregate " + escapeMarkdown(numericField.id) + " by " + escapeMarkdown(enumField.id),
-        value: { sql: "SELECT " + safeEnumId2 + ", COUNT(*) as cnt, AVG(" + safeNumId + ") as avg_val FROM " + tableName + " GROUP BY " + safeEnumId2 + " ORDER BY cnt DESC" }
-      };
-    } else if (enumField) {
-      var safeEnumId3 = safeSqlIdentifier(enumField.id);
-      sqlExamples["aggregate"] = {
-        summary: "Count by " + escapeMarkdown(enumField.id),
-        value: { sql: "SELECT " + safeEnumId3 + ", COUNT(*) as cnt FROM " + tableName + " GROUP BY " + safeEnumId3 + " ORDER BY cnt DESC" }
-      };
-    } else {
-      var safeFirstId = safeSqlIdentifier(firstField.id);
-      sqlExamples["aggregate"] = {
-        summary: "Aggregate query (COUNT)",
-        value: { sql: "SELECT " + safeFirstId + ", COUNT(*) as cnt FROM " + tableName + " GROUP BY " + safeFirstId + " ORDER BY cnt DESC LIMIT 20" }
-      };
-    }
-
-    if (timestampField) {
-      var safeTsId = safeSqlIdentifier(timestampField.id);
-      sqlExamples["time_series"] = {
-        summary: "Recent records by " + escapeMarkdown(timestampField.id),
-        value: { sql: "SELECT * FROM " + tableName + " ORDER BY " + safeTsId + " DESC LIMIT 25" }
-      };
-    }
-
     // --- The spec ---
     return {
       openapi: "3.1.0",
@@ -349,17 +295,12 @@ this.ckan.module("swagger-explorer", function ($) {
         version: "1.0.0"
       },
       servers: [{ url: baseUrl }],
-      tags: [
-        { name: "DataStore Search", description: "Query with search, filters, sort, and pagination" },
-        { name: "SQL Query", description: "Run read-only SQL SELECT queries" }
-      ],
       paths: {
         "/api/action/datastore_search": {
           get: {
             operationId: "datastoreSearchGet",
             summary: "Search DataStore",
             description: "Query with filters, full-text search, sorting, and pagination. Total records: **" + totalRecords.toLocaleString() + "**",
-            tags: ["DataStore Search"],
             parameters: [
               { name: "q", "in": "query", schema: { type: "string" }, description: "Full-text search across all fields" }
             ].concat(enumFilterParams).concat([
@@ -370,45 +311,10 @@ this.ckan.module("swagger-explorer", function ($) {
             ]),
             responses: { "200": { description: "Success", content: { "application/json": { schema: { $ref: "#/components/schemas/SearchResponse" } } } } }
           }
-        },
-        "/api/action/datastore_search_sql": {
-          get: {
-            operationId: "datastoreSearchSqlGet",
-            summary: "SQL Query",
-            description: "Run a read-only SQL SELECT. Table name: " + escapeMarkdown(tableName),
-            tags: ["SQL Query"],
-            parameters: [
-              { name: "sql", "in": "query", required: true, schema: { type: "string", "default": "SELECT * FROM " + tableName + " LIMIT 10" }, description: "SQL SELECT statement. Use " + tableName + " as the table name." }
-            ],
-            responses: { "200": { description: "Success", content: { "application/json": { schema: { $ref: "#/components/schemas/SearchResponse" } } } } }
-          },
-          post: {
-            operationId: "datastoreSearchSqlPost",
-            summary: "SQL Query (JSON body)",
-            description: "Run a read-only SQL SELECT via JSON body.",
-            tags: ["SQL Query"],
-            requestBody: {
-              required: true,
-              content: {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/DatastoreSqlBody" },
-                  examples: sqlExamples
-                }
-              }
-            },
-            responses: { "200": { description: "Success", content: { "application/json": { schema: { $ref: "#/components/schemas/SearchResponse" } } } } }
-          }
         }
       },
       components: {
         schemas: {
-          DatastoreSqlBody: {
-            type: "object",
-            required: ["sql"],
-            properties: {
-              sql: { type: "string", description: "SQL SELECT. Table: " + tableName, "default": "SELECT * FROM " + tableName + " LIMIT 10" }
-            }
-          },
           SearchResponse: {
             type: "object",
             properties: {

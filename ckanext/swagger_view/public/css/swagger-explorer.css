@@ -133,15 +133,6 @@
 .swagger-explorer-body .swagger-ui .topbar { display: none !important; }
 .swagger-explorer-body .swagger-ui .info { margin: 16px 0 8px 0; }
 
-/* Fix select dropdowns — ensure full clickable area */
-.swagger-explorer-body .swagger-ui select {
-  -webkit-appearance: menulist !important;
-  -moz-appearance: menulist !important;
-  appearance: menulist !important;
-  cursor: pointer !important;
-  width: 100% !important;
-  padding: 5px 8px !important;
-}
 .swagger-explorer-body .swagger-ui .scheme-container { display: none !important; }
 .swagger-explorer-body .swagger-ui .authorization__btn { display: none !important; }
 .swagger-explorer-body .swagger-ui section.models { display: none !important; }
@@ -156,8 +147,14 @@
   overflow-y: auto;
 }
 
+/* Fix select dropdowns — full clickable area, capped width */
 .swagger-explorer-body .swagger-ui select {
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+  appearance: menulist !important;
+  cursor: pointer !important;
   max-width: 300px;
+  padding: 5px 8px !important;
 }
 
 /* Data Dictionary table */
