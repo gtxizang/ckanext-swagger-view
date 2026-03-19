@@ -133,15 +133,14 @@
 .swagger-explorer-body .swagger-ui .topbar { display: none !important; }
 .swagger-explorer-body .swagger-ui .info { margin: 16px 0 8px 0; }
 
-/* Remove vertical divider line from Swagger UI layout */
-.swagger-explorer-body .swagger-ui .information-container,
-.swagger-explorer-body .swagger-ui .information-container *,
-.swagger-explorer-body .swagger-ui .info,
-.swagger-explorer-body .swagger-ui .info > *,
-.swagger-explorer-body .swagger-ui .info hgroup.main,
-.swagger-explorer-body .swagger-ui .info .main {
-  border-left: none !important;
-  border-right: none !important;
+/* Fix select dropdowns — ensure full clickable area */
+.swagger-explorer-body .swagger-ui select {
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+  appearance: menulist !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  padding: 5px 8px !important;
 }
 .swagger-explorer-body .swagger-ui .scheme-container { display: none !important; }
 .swagger-explorer-body .swagger-ui .authorization__btn { display: none !important; }
@@ -198,32 +197,3 @@
   color: #3730a3;
 }
 
-/* Collapsible Data Dictionary */
-.swagger-explorer-body .swagger-ui .info .renderedMarkdown details {
-  margin-top: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.swagger-explorer-body .swagger-ui .info .renderedMarkdown details summary {
-  padding: 10px 14px;
-  cursor: pointer;
-  background: #f1f5f9;
-  font-size: 14px;
-  color: #16213e;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-.swagger-explorer-body .swagger-ui .info .renderedMarkdown details summary:hover {
-  background: #e8edf4;
-}
-
-.swagger-explorer-body .swagger-ui .info .renderedMarkdown details[open] summary {
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.swagger-explorer-body .swagger-ui .info .renderedMarkdown details > *:not(summary) {
-  padding: 0 14px;
-}

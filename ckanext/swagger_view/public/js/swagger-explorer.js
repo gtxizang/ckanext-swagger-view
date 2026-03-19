@@ -611,8 +611,9 @@ this.ckan.module("swagger-explorer", function ($) {
         self._swaggerInstance = SwaggerUIBundle({
           spec: spec,
           domNode: container,
-          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-          layout: "StandaloneLayout",
+          presets: [SwaggerUIBundle.presets.apis],
+          plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+          layout: "BaseLayout",
           tryItOutEnabled: true,
           docExpansion: "list",
           defaultModelsExpandDepth: 0,
