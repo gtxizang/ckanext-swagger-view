@@ -14,7 +14,8 @@
               data-module-resource-id="{{ res.id }}"
               data-module-base-url="{{ h.swagger_view_site_url() }}"
               data-module-dataset-name="{{ h.dataset_display_name(pkg_dict) }}"
-              data-module-hidden-fields="{{ h.swagger_view_hidden_fields() }}">
+              data-module-hidden-fields="{{ h.swagger_view_hidden_fields() }}"
+              data-module-spec-url="{{ h.swagger_view_spec_url(res.id) }}">
         <i class="fa fa-bolt"></i> {{ _("API Explorer") }}
       </button>
     </li>

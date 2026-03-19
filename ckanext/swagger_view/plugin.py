@@ -20,6 +20,7 @@ class SwaggerViewPlugin(plugins.SingletonPlugin):
             "swagger_view_hidden_fields": swagger_view_hidden_fields,
             "swagger_view_site_url": swagger_view_site_url,
             "swagger_view_can_explore": swagger_view_can_explore,
+            "swagger_view_spec_url": swagger_view_spec_url,
         }
 
 
@@ -51,3 +52,15 @@ def swagger_view_can_explore(resource_id):
         return True
     except Exception:
         return False
+
+
+def swagger_view_spec_url(resource_id):
+    """Return the OpenAPI spec URL if ckanext-openapi-view is installed.
+
+    Returns empty string if the openapi_view plugin is not loaded,
+    allowing the JS layer to fall back to client-side introspection.
+    """
+    if not plugins.plugin_loaded("openapi_view"):
+        return ""
+    site_url = toolkit.config.get("ckan.site_url", "").rstrip("/")
+    return "{}/api/3/action/resource_openapi/{}".format(site_url, resource_id)

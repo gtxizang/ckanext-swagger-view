@@ -507,7 +507,8 @@ this.ckan.module("swagger-explorer", function ($) {
       resourceId: "",
       baseUrl: "",
       datasetName: "",
-      hiddenFields: "_id"
+      hiddenFields: "_id",
+      specUrl: ""
     },
 
     _loading: false,
@@ -602,58 +603,104 @@ this.ckan.module("swagger-explorer", function ($) {
         if (e.target === modal) self._closeModal();
       };
 
-      // Fetch and render
-      fetch(baseUrl + "/api/action/datastore_search?resource_id=" + encodeURIComponent(resourceId) + "&limit=0", {
-        credentials: "same-origin"
-      })
-        .then(function (testResp) {
-          if (!testResp.ok) {
-            if (testResp.status === 401 || testResp.status === 403) {
-              setModalStatus("Authentication required or access denied.", "error");
-            } else {
-              setModalStatus("CKAN API returned HTTP " + testResp.status, "error");
-            }
-            self._loading = false;
-            return;
-          }
+      // Render a spec into Swagger UI
+      function renderSpec(spec) {
+        if (modal.style.display === "none") return;
+        setModalStatus("", "");
+        self._destroySwaggerUI();
+        self._swaggerInstance = SwaggerUIBundle({
+          spec: spec,
+          domNode: container,
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          layout: "StandaloneLayout",
+          tryItOutEnabled: true,
+          docExpansion: "list",
+          defaultModelsExpandDepth: 0,
+          requestInterceptor: makeRequestInterceptor(resourceId)
+        });
+        self._loading = false;
+      }
 
-          return deepIntrospect(baseUrl, resourceId, function (msg) {
-            setModalStatus(msg, "loading");
-          }).then(function (introspection) {
-            // Check if modal was closed during async work
-            if (modal.style.display === "none") return;
-
-            if (!introspection) {
-              setModalStatus("Could not introspect this resource. DataStore may not be enabled.", "error");
+      // Client-side introspection fallback (original flow)
+      function clientSideFallback() {
+        fetch(baseUrl + "/api/action/datastore_search?resource_id=" + encodeURIComponent(resourceId) + "&limit=0", {
+          credentials: "same-origin"
+        })
+          .then(function (testResp) {
+            if (!testResp.ok) {
+              if (testResp.status === 401 || testResp.status === 403) {
+                setModalStatus("Authentication required or access denied.", "error");
+              } else {
+                setModalStatus("CKAN API returned HTTP " + testResp.status, "error");
+              }
               self._loading = false;
               return;
             }
 
-            var spec = buildOpenApiSpec(resourceId, baseUrl, datasetName, introspection, hiddenFields);
-            setModalStatus("", "");
-
-            // Destroy previous instance if any
-            self._destroySwaggerUI();
-
-            self._swaggerInstance = SwaggerUIBundle({
-              spec: spec,
-              domNode: container,
-              presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-              layout: "StandaloneLayout",
-              tryItOutEnabled: true,
-              docExpansion: "list",
-              defaultModelsExpandDepth: 0,
-              requestInterceptor: makeRequestInterceptor(resourceId)
+            return deepIntrospect(baseUrl, resourceId, function (msg) {
+              setModalStatus(msg, "loading");
+            }).then(function (introspection) {
+              if (modal.style.display === "none") return;
+              if (!introspection) {
+                setModalStatus("Could not introspect this resource. DataStore may not be enabled.", "error");
+                self._loading = false;
+                return;
+              }
+              renderSpec(buildOpenApiSpec(resourceId, baseUrl, datasetName, introspection, hiddenFields));
             });
-
+          })
+          .catch(function (err) {
+            console.error("swagger-explorer:", err);
+            setModalStatus("An error occurred while loading the API Explorer.", "error");
             self._loading = false;
           });
-        })
-        .catch(function (err) {
-          console.error("swagger-explorer:", err);
-          setModalStatus("An error occurred while loading the API Explorer.", "error");
-          self._loading = false;
-        });
+      }
+
+      // Try server-side spec first (ckanext-openapi-view), fall back to client-side
+      var specUrl = this.options.specUrl;
+      if (specUrl && /^https?:\/\//.test(specUrl)) {
+        // Verify the spec URL is same-origin as baseUrl to prevent
+        // a tampered attribute from fetching from an attacker's server.
+        try {
+          if (new URL(specUrl).origin !== new URL(baseUrl).origin) {
+            console.error("swagger-explorer: specUrl origin does not match baseUrl");
+            clientSideFallback();
+            return;
+          }
+        } catch (urlErr) {
+          clientSideFallback();
+          return;
+        }
+
+        setModalStatus("Loading API spec...", "loading");
+        fetch(specUrl, { credentials: "same-origin" })
+          .then(function (resp) {
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
+            return resp.json();
+          })
+          .then(function (data) {
+            if (data.success && data.result && typeof data.result === "object" && data.result.openapi) {
+              // Verify the spec's server URL matches our baseUrl
+              var servers = data.result.servers;
+              if (servers && servers[0] && servers[0].url !== baseUrl) {
+                console.warn("swagger-explorer: spec server URL mismatch, rejecting");
+                throw new Error("Server URL mismatch");
+              }
+              renderSpec(data.result);
+            } else {
+              throw new Error("Invalid spec response");
+            }
+          })
+          .catch(function (fetchErr) {
+            // Server-side spec failed — fall back to client-side introspection.
+            // This is logged (not silent) so operators can investigate.
+            console.warn("swagger-explorer: server spec failed, using client-side introspection", fetchErr);
+            setModalStatus("Connecting...", "loading");
+            clientSideFallback();
+          });
+      } else {
+        clientSideFallback();
+      }
     },
 
     _destroySwaggerUI: function () {
