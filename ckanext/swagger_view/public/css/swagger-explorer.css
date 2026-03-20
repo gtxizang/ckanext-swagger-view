@@ -147,11 +147,12 @@
   overflow-y: auto;
 }
 
-/* Fix select dropdowns — full clickable area, capped width */
+/* Fix select dropdowns — native arrow, no Swagger UI background arrow */
 .swagger-explorer-body .swagger-ui select {
   -webkit-appearance: menulist !important;
   -moz-appearance: menulist !important;
   appearance: menulist !important;
+  background-image: none !important;
   cursor: pointer !important;
   max-width: 300px;
   padding: 5px 8px !important;
