@@ -35,7 +35,7 @@ A CKAN extension that adds an **API Explorer** button to DataStore resource page
 3. (Optional) Configure hidden fields:
 
    ```ini
-   ckanext.swagger_view.hidden_fields = _id soda_hashbyte soda_identity
+   ckanext.swagger_view.hidden_fields = _id _full_text
    ```
 
    Default: `_id`
