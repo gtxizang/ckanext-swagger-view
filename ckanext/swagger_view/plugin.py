@@ -50,7 +50,7 @@ def swagger_view_can_explore(resource_id):
             "datastore_search", context, {"resource_id": resource_id}
         )
         return True
-    except Exception:
+    except (toolkit.NotAuthorized, toolkit.ObjectNotFound):
         return False
 
 

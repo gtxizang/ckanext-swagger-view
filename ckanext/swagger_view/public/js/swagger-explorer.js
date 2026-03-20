@@ -28,7 +28,7 @@ this.ckan.module("swagger-explorer", function ($) {
   }
 
   function safeSqlIdentifier(name) {
-    return '"' + String(name).replace(/"/g, '""') + '"';
+    return '"' + String(name).replace(/\0/g, "").replace(/"/g, '""') + '"';
   }
 
   function truncate(str, maxLen) {
