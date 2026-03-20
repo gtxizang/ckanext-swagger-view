@@ -125,7 +125,7 @@ this.ckan.module("swagger-explorer", function ($) {
 
       if (!metaResult || !metaResult.fields) return null;
 
-      var fields = metaResult.fields.filter(function (f) { return f.id !== "_id"; });
+      var fields = metaResult.fields;
       var totalRecords = metaResult.total || 0;
       var sampleRecords = (sampleResult && sampleResult.records) || [];
 
